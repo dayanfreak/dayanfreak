@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>وب‌سایت دایان - با افکت Parallax</title>
+  <title>وب‌سایت دایان - کهکشان پارالاکس</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -13,6 +13,7 @@
       direction: rtl;
       margin: 0;
       overflow-x: hidden;
+      background: radial-gradient(circle at center, #000010 0%, #000000 80%);
     }
     .hero {
       height: 100vh;
@@ -23,18 +24,14 @@
       align-items: center;
       text-align: center;
       position: relative;
+      overflow: hidden;
     }
-    .hero::before {
-      content: "";
-      background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e') no-repeat center center;
-      background-size: cover;
+    #stars-layer1, #stars-layer2, #stars-layer3 {
       position: absolute;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      left: 0;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
       z-index: -1;
-      transform: translateZ(-1px) scale(1.5);
     }
     .typed-container {
       font-size: 2rem;
@@ -49,18 +46,6 @@
       padding: 20px;
       text-align: center;
     }
-    #starfield {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: -1; /* پشت متن */
-  display: block;
-}
-.hero {
-  position: relative; /* برای اینکه canvas موقعیت مطلقش نسبت به hero باشه */
-}
-
   </style>
 </head>
 <body>
@@ -72,7 +57,9 @@
   </nav>
 
   <section class="hero" id="hero">
-    <canvas id="starfield"></canvas>
+    <canvas id="stars-layer1"></canvas>
+    <canvas id="stars-layer2"></canvas>
+    <canvas id="stars-layer3"></canvas>
     <h1 class="display-4">سلام، من دایان هستم</h1>
     <div class="typed-container">
       <span id="typed-text"></span>
@@ -143,74 +130,62 @@
       document.getElementById("response-msg").innerText = "✅ پیام شما با موفقیت ارسال شد (نمایشی)";
       this.reset();
     });
-const canvas = document.getElementById('starfield');
-const ctx = canvas.getContext('2d');
 
-let width, height;
-function resize() {
-  width = canvas.width = canvas.offsetWidth;
-  height = canvas.height = canvas.offsetHeight;
-}
-window.addEventListener('resize', resize);
-resize();
-
-const starsCount = 150;
-const stars = [];
-
-class Star {
-  constructor() {
-    this.reset();
-  }
-  reset() {
-    this.x = Math.random() * width;
-    this.y = Math.random() * height;
-    this.size = Math.random() * 1.5 + 0.3;
-    this.speed = (this.size * 0.3) + 0.05;
-    this.alpha = Math.random();
-    this.alphaChange = 0.005 * (Math.random() < 0.5 ? 1 : -1);
-  }
-  update() {
-    this.x -= this.speed;
-    this.alpha += this.alphaChange;
-    if (this.alpha <= 0) {
-      this.alpha = 0;
-      this.alphaChange = -this.alphaChange;
+    function initStars(canvasId, numStars, speedFactor) {
+      const canvas = document.getElementById(canvasId);
+      const ctx = canvas.getContext('2d');
+      let width, height;
+      function resize() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+      }
+      window.addEventListener('resize', resize);
+      resize();
+      const stars = [];
+      class Star {
+        constructor() { this.reset(); }
+        reset() {
+          this.x = Math.random() * width;
+          this.y = Math.random() * height;
+          this.size = Math.random() * 1.5 + 0.3;
+          this.speed = this.size * speedFactor;
+          this.alpha = Math.random() * 0.8 + 0.2;
+          this.color = Math.random() > 0.5 ? "rgba(255,255,255," : "rgba(173,216,230,";
+        }
+        update() {
+          this.x -= this.speed;
+          if (this.x < 0) {
+            this.x = width;
+            this.y = Math.random() * height;
+          }
+        }
+        draw() {
+          ctx.beginPath();
+          ctx.fillStyle = this.color + this.alpha + ")";
+          ctx.shadowColor = 'white';
+          ctx.shadowBlur = 5;
+          ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      for (let i = 0; i < numStars; i++) {
+        stars.push(new Star());
+      }
+      function animate() {
+        ctx.clearRect(0, 0, width, height);
+        for (let star of stars) {
+          star.update();
+          star.draw();
+        }
+        requestAnimationFrame(animate);
+      }
+      animate();
     }
-    if (this.alpha >= 1) {
-      this.alpha = 1;
-      this.alphaChange = -this.alphaChange;
-    }
-    if (this.x < 0) {
-      this.x = width;
-      this.y = Math.random() * height;
-      this.size = Math.random() * 1.5 + 0.3;
-      this.speed = (this.size * 0.3) + 0.05;
-    }
-  }
-  draw() {
-    ctx.beginPath();
-    ctx.fillStyle = `rgba(255, 255, 255, ${this.alpha})`;
-    ctx.shadowColor = 'white';
-    ctx.shadowBlur = 5;
-    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-    ctx.fill();
-  }
-}
 
-for (let i = 0; i < starsCount; i++) {
-  stars.push(new Star());
-}
-
-function animate() {
-  ctx.clearRect(0, 0, width, height);
-  for (const star of stars) {
-    star.update();
-    star.draw();
-  }
-  requestAnimationFrame(animate);
-}
-animate();
-
+    // ایجاد سه لایه پارالاکس
+    initStars("stars-layer1", 100, 0.1);
+    initStars("stars-layer2", 80, 0.3);
+    initStars("stars-layer3", 60, 0.6);
   </script>
 </body>
 </html>
